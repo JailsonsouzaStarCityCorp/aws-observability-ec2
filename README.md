@@ -1,252 +1,260 @@
-# Monitoramento Completo na AWS com EC2, Apache, CloudWatch Agent, Logs, Métricas, Alarmes e Dashboard
+Projeto de Monitoramento AWS + Apache + CloudWatch + Neo4j
+📌 Visão Geral
 
-Este projeto implementa uma arquitetura completa de **monitoramento em nuvem**, utilizando Amazon EC2, Apache, CloudWatch Agent, métricas personalizadas, logs centralizados, alarmes inteligentes e um dashboard profissional. O objetivo é demonstrar habilidades práticas de **Cloud Support, Observabilidade e DevOps Jr.**, sendo ideal para portfólio, GitHub e entrevistas técnicas.
+Este projeto implementa um ambiente completo de monitoramento e observabilidade utilizando:
 
----
+AWS EC2
 
-## 🏗️ Arquitetura do Projeto
+Apache HTTP Server
 
-**Componentes principais:**
+AWS CloudWatch Agent
 
-* **Amazon EC2:** Servidor Linux rodando Apache
-* **Apache2:** Serviço monitorado via logs e métricas
-* **CloudWatch Agent:** Captura CPU, RAM, Disco e envia para o CloudWatch
-* **CloudWatch Logs:** Armazena erros do Apache em log groups
-* **Metric Filter:** Cria métricas baseadas em padrões de log (ex.: "ERROR")
-* **SNS:** Notificações por e-mail
-* **CloudWatch Alarms:** Disparam eventos com CPU alta, Disco cheio e Erros do Apache
-* **Dashboard:** Painel visual consolidado
+Métricas personalizadas
 
-**Fluxo:**
+Logs centralizados
 
-```
-EC2 → CloudWatch Agent → CloudWatch Metrics → CloudWatch Alarms → SNS → E-mail
-                                 ↘
-                                   CloudWatch Logs → Metric Filter → ApacheErrors
-```
+Alarmes
 
----
+SNS (alertas por e-mail)
 
-## ⚙️ Configuração da EC2 + Apache
+Neo4j para visualização de eventos em grafo
 
-Instalar Apache:
+O objetivo é demonstrar um fluxo real de suporte/Cloud/DevOps, elevando o projeto ao nível profissional.
 
-```
+🟦 Arquitetura do Projeto
+┌──────────┐       ┌────────────────────┐
+│  Usuário │──────▶│ Apache (porta 80)  │
+└──────────┘       └────────────────────┘
+                       │ Logs / Erros
+                       ▼
+             ┌────────────────────┐
+             │ CloudWatch Agent   │
+             │  (Métricas + Logs) │
+             └────────────────────┘
+              │ CPU │ RAM │ Disco │
+              ▼
+     ┌────────────────┐
+     │ CloudWatch     │
+     │  Logs & Metrics│
+     └────────────────┘
+      │ Alarmes (SNS)
+      ▼
+┌────────────────────┐
+│ E-mail (alertas)   │
+└────────────────────┘
+
+ ┌────────────────────┐
+ │ Neo4j (porta 7474) │
+ │ Visualização em    │
+ │ Grafos de eventos  │
+ └────────────────────┘
+
+🟦 1. Configuração da EC2
+
+Ubuntu 24.04 LTS
+
+Instalação do Apache:
+
 sudo apt update
 sudo apt install apache2 -y
-```
 
-Criar página simples:
 
-```
+Página customizada:
+
 echo "Servidor de Monitoramento AWS - Jailson" | sudo tee /var/www/html/index.html
-```
 
-Verificar serviço:
-
-```
-systemctl status apache2
-```
-
----
-
-## 📦 Instalação do CloudWatch Agent
-
-Download e instalação:
-
-```
+🟦 2. CloudWatch Agent
+✔ Instalação
 wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
 sudo dpkg -i amazon-cloudwatch-agent.deb
-```
 
-Configuração:
+✔ Configuração criada por você (config.json)
 
-```
-sudo nano /opt/aws/amazon-cloudwatch-agent/bin/config.json
-```
+Coleta:
 
-Configuração utilizada (resumo):
+CPU
 
-* CPU (user/system/idle)
-* RAM
-* Disco (/)
-* Logs do Apache error.log
+Memória
 
-Aplicar a configuração:
+Disco
 
-```
-sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json -s
-```
+Log de Erros do Apache (/var/log/apache2/error.log)
 
-Verificar status:
+Ativação:
 
-```
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config \
+  -m ec2 \
+  -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json \
+  -s
+
+✔ Verificação
 systemctl status amazon-cloudwatch-agent
-```
 
----
+🟦 3. CloudWatch Dashboard
 
-## 🔐 IAM Role para permitir envio de métricas
+Você criou um dashboard profissional com:
 
-Criada função **EC2-CloudWatchAgent-Role** com política:
+✔ Gráficos de:
 
-```
-CloudWatchAgentServerPolicy
-```
+CPUUsage
 
-Associada à instância EC2 via:
+MemoryUsage
 
-```
-EC2 → Actions → Security → Modify IAM Role
-```
+DiskUsage
 
----
+✔ Logs filtrados por:
+fields @timestamp, @message
+| filter @message like /ERROR/
+| sort @timestamp desc
+| limit 20
 
-## 📝 Logs do Apache no CloudWatch
+✔ Widgets de métricas + métricas customizadas
+✔ Screenshots do painel podem ser adicionados aqui
+🟦 4. Alarmes Configurados
+✔ Alarme 1 — CPU > 70%
 
-O agente envia automaticamente o arquivo:
+Threshold: 70%
 
-```
-/var/log/apache2/error.log
-```
+Estatística: Average
 
-para o log group:
+Período: 5 minutos
 
-```
-apache_error_log
-```
+Ação: Envio para SNS
 
----
+✔ Alarme 2 — Disco > 80%
 
-## 📊 Criação das Métricas Personalizadas (Metric Filter)
+Métrica usada: disk_used_percent
 
-Filtro criado para identificar erros do Apache:
+Estatística: Maximum
 
-```
-Filter pattern: ERROR
-```
+Período: 5 minutos
 
-Métrica gerada:
+✔ Alarme 3 — Erros do Apache
 
-```
-Namespace: CWAgent/Apache
-Metric Name: ApacheErrors
-Value: 1
-```
+Criado com Metric Filter usando:
 
----
+ERROR
 
-## 🚨 Alarmes Criados
 
-### 1️⃣ Alarme de CPU Alta
+Estatística: Sum
+Alarme dispara ao detectar qualquer erro.
 
-```
-Métrica: cpu_usage_user
-Condição: > 70%
-Período: 1 minuto
-Ação: SNS → alertas_support
-```
+🟦 5. SNS — Notificação por E-mail
 
-### 2️⃣ Alarme de Disco Cheio
+Você configurou:
 
-```
-Métrica: used_percent
-Condição: > 80%
-Período: 1 minuto
-```
+Tópico SNS
 
-### 3️⃣ Alarme de Erros do Apache
+Assinatura via e-mail
 
-```
-Métrica: ApacheErrors
-Condição: > 0
-Período: 1 minuto
-```
+Confirmação do e-mail
 
----
+Alarmes integrados ao SNS
 
-## 📈 Dashboard Profissional
+🟦 6. Neo4j (Integração Manual Inicial)
+✔ Instalação
+wget -O - https://debian.neo4j.com/neotechnology.gpg.key | sudo apt-key add -
+echo "deb https://debian.neo4j.com stable 5" | sudo tee /etc/apt/sources.list.d/neo4j.list
 
-Widgets adicionados:
+sudo apt update
+sudo apt install neo4j -y
 
-* Gráfico de CPU (user/system/idle)
-* RAM (mem_used_percent)
-* Disco (used_percent)
-* Logs do Apache filtrando ERROR
-* Estado dos alarmes (CPU, Disco, Apache)
+✔ Liberação de portas no Security Group
 
-Dashboard: **Monitoramento-AWS-Jailson**
+7474 (HTTP)
 
----
+7687 (Bolt)
 
-## 🧪 Testes Realizados
+✔ Configuração para acesso externo
 
-### Teste de CPU alta:
+Arquivo: /etc/neo4j/neo4j.conf
 
-```
-sudo apt install stress -y
-stress --cpu 4 --timeout 120
-```
+server.default_listen_address=0.0.0.0
+server.http.listen_address=:7474
+server.bolt.listen_address=:7687
 
-### Teste de Disco cheio:
+✔ Testes realizados
 
-```
-sudo fallocate -l 3G /bigfile
-sudo rm /bigfile
-```
+Criados manualmente no Neo4j:
 
-### Teste de erro no Apache:
+Label LogEntry
 
-```
-sudo systemctl stop apache2
-```
+Label IP
 
-Acessar o IP para gerar erro.
+Label Route
 
----
+Label Status
 
-## 💻 Como Reproduzir o Projeto
+Exemplo criado:
 
-1. Criar EC2 Linux
-2. Instalar Apache
-3. Instalar CloudWatch Agent
-4. Configurar JSON de métricas e logs
-5. Criar IAM Role e anexar à EC2
-6. Validar métricas no CloudWatch
-7. Criar filtros e alarmes
-8. Montar dashboard
+CREATE (l:LogEntry {
+ message:"ERROR File not found",
+ route:"/naoexiste",
+ status:404,
+ timestamp:timestamp()
+});
 
----
 
-## 📚 Tecnologias Utilizadas
+Relacionamentos:
 
-* AWS EC2
-* Apache2
-* CloudWatch Logs
-* CloudWatch Metrics
-* CloudWatch Agent
-* SNS
-* IAM
+(ip)-[:GEROU]->(l)
+(l)-[:RETORNOU]->(s)
+(l)-[:OCORREU_EM]->(r)
 
----
 
-## 🏁 Conclusão
+Isso cria um grafo profissional representando:
 
-Este projeto demonstra domínio completo de:
+(IP) → GEROU → (LogEntry) → RETORNOU → (Status)
+                            ↘
+                             OCORREU_EM → (Route)
 
-* Observabilidade
-* Monitoramento em tempo real
-* Diagnóstico de serviços
-* Detecção de incidentes
-* Estruturação de métricas e logs
-* Criação de dashboards profissionais
-* Engenharia de suporte e operação em nuvem
+🟦 7. Prints e Evidências
 
-Uma solução pronta para equipes de **Cloud, SRE, NOC e DevOps Jr.**.
+<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/55face8a-0eb3-47bd-a751-ca4a5a77363c" />
+<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/c7231153-3d5f-4cb6-ba64-2fc77b127f22" />
+<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/d4fbca5d-82b4-46ce-9657-77bfb224eb96" />
+<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/ba0accfa-a634-4f09-860a-61f32182913b" />
 
----
 
-## 📸 Prints do Projeto
+
+🟦 8. Próximos Passos (Futuros)
+
+Ainda não incluídos neste README, conforme solicitado.
+
+Script automático Python → Neo4j
+
+Integração CloudWatch → Lambda → Neo4j
+
+Grafos de eventos em real time
+
+Serviço systemd para monitoramento contínuo
+
+Esses serão adicionados depois como extensões do projeto.
+
+🟦 Conclusão
+
+Este projeto demonstra habilidades práticas nas áreas de:
+
+Suporte Cloud
+
+EC2
+
+Linux
+
+Apache
+
+Observabilidade
+
+CloudWatch (métricas, logs, alarmes, dashboards)
+
+SNS (alertas)
+
+Neo4j (modelagem de grafos)
+
+Segurança de rede
+
+Com ele, você mostra domínio de conceitos fundamentais de Cloud Support e DevOps.
 
 <img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/55face8a-0eb3-47bd-a751-ca4a5a77363c" />
 <img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/c7231153-3d5f-4cb6-ba64-2fc77b127f22" />
