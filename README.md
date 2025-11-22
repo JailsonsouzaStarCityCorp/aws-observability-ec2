@@ -256,11 +256,6 @@ Segurança de rede
 
 Com ele, você mostra domínio de conceitos fundamentais de Cloud Support e DevOps.
 
-<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/55face8a-0eb3-47bd-a751-ca4a5a77363c" />
-<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/c7231153-3d5f-4cb6-ba64-2fc77b127f22" />
-<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/d4fbca5d-82b4-46ce-9657-77bfb224eb96" />
-
-
 
 
 
